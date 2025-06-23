@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: backend
+  namespace: kub-app
+  labels:
+    app: backend
+spec:
+  containers:
+    - name: backend
+      image: nginx:latest
+      ports:
+        - containerPort: 8000
+      env:
+        - name: DB_HOST
+          value: "postgres-service"
+        - name: DB_USER
+          value: "postgres"
+        - name: DB_PASSWORD
+          value: "postgres"
+        - name: DB_NAME
+          value: "postgres"
+      volumeMounts:
+        - mountPath: /app/logs
+          name: logs-volume
+  volumes:
+    - name: logs-volume
+      emptyDir: {}
