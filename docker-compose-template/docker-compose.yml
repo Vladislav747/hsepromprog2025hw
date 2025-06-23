@@ -1,0 +1,74 @@
+version: '3'
+
+services:
+  backend:
+    platform: linux/amd64
+    container_name: backend
+    build:
+      context: ./backend/
+      dockerfile: Dockerfile
+    networks:
+      - app_network
+    restart: always
+    volumes:
+      - logs_volume:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: ./frontend/
+      dockerfile: Dockerfile
+    container_name: frontend
+    restart: always
+    networks:
+      - app_network
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "8189:80"
+
+  init-db:
+    build: ./backend
+    command: python init_db.py
+    networks:
+      - app_network
+    depends_on:
+      - postgres
+      - backend
+    environment:
+      DB_HOST: postgres
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: postgres
+    restart: on-failure
+
+  postgres:
+    image: postgres:13
+    container_name: postgres
+    networks:
+      - app_network
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+volumes:
+  logs_volume:
+  postgres_data:
+
+networks:
+  app_network:
+    driver: bridge
